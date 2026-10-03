@@ -1,0 +1,29 @@
+# Copy to ~/.config/email-organizer/config.yaml (or pass --config).
+
+model:
+  repo: Cloudflare/clef
+  # path: /data/models/clef     # use a pre-downloaded snapshot instead of the HF cache
+  quantization: nf4             # nf4 (fits a 24 GB GPU) | bf16 (needs ~54 GB VRAM)
+  max_length: 4096
+  threshold: 0.6                # below this top probability the message stays in the inbox
+  batch_size: 2
+
+# Each category is one option of a single "choice" question. `criteria` is what Clef reads,
+# so write it as a description of the mail that belongs there. folder: INBOX = leave in place.
+categories:
+  receipts:      {criteria: "Purchase receipts, invoices, order/shipping confirmations", folder: Receipts}
+  newsletters:   {criteria: "Newsletters, marketing, promotions, digests", folder: Newsletters}
+  notifications: {criteria: "Automated service notifications, alerts, security codes", folder: Notifications}
+  personal:      {criteria: "Written personally by a human to me", folder: INBOX}
+
+accounts:
+  - {name: fastmail, type: fastmail, token_env: FASTMAIL_API_TOKEN}
+  - name: proton
+    type: proton
+    host: 127.0.0.1
+    port: 1143
+    username: you@proton.me
+    password_env: PROTON_BRIDGE_PASSWORD
+    # Pin Bridge's self-signed cert (SHA-256 of the DER cert), or set verify: false (localhost only).
+    # cert_fingerprint: "ab:cd:…"
+    verify: false
