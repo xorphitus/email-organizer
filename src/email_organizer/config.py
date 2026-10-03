@@ -23,16 +23,18 @@ class _Strict(BaseModel):
 
 class ModelConfig(_Strict):
     repo: str = "Cloudflare/clef"
-    # Local snapshot directory; when unset the repo is resolved via snapshot_download.
+    # Local model directory: a snapshot, or the output of `email-organizer quantize`
+    # (loads much faster). When unset the repo is resolved via snapshot_download.
     path: Path | None = None
     quantization: Literal["nf4", "bf16"] = "nf4"
-    max_length: int = Field(4096, ge=256)
-    # Passed to encode_record so long bodies are cut before the schema is.
-    max_state_tokens: int | None = 3584
+    # Total tokens per email; encode_record trims the state (never the schema) to fit.
+    # Activation memory scales with this, so keep it modest on a 24 GB GPU.
+    max_length: int = Field(2048, ge=256)
+    max_state_tokens: int | None = None
     threshold: float = Field(0.6, ge=0.0, le=1.0)
-    batch_size: int = Field(2, ge=1)
+    batch_size: int = Field(1, ge=1)
     # Body characters kept before tokenization (cheap pre-truncation).
-    body_chars: int = Field(12000, ge=0)
+    body_chars: int = Field(8000, ge=0)
     # Modules kept in BF16 when quantizing. Names follow Qwen3_5ForConditionalGeneration;
     # `email-organizer test-model` prints which modules ended up unquantized.
     skip_quant_modules: list[str] = ["visual", "lm_head"]
@@ -130,4 +132,6 @@ def load_config(path: Path | str = DEFAULT_CONFIG_PATH) -> Config:
         data = yaml.safe_load(f) or {}
     cfg = Config.model_validate(data)
     cfg.state_db = cfg.state_db.expanduser()
+    if cfg.model.path:
+        cfg.model.path = cfg.model.path.expanduser()
     return cfg

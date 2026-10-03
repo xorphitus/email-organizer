@@ -12,7 +12,7 @@ def test_example_config_loads():
     cfg = load_config(ROOT / "config.example.yaml")
     assert cfg.model.quantization == "nf4"
     assert cfg.model.threshold == 0.6
-    assert cfg.model.batch_size == 2
+    assert cfg.model.batch_size == 1
     assert set(cfg.categories) == {"receipts", "newsletters", "notifications", "personal"}
     assert cfg.categories["personal"].folder == "INBOX"
     assert isinstance(cfg.account("fastmail"), FastmailAccount)
@@ -31,7 +31,7 @@ def _base(**over):
 
 def test_defaults():
     cfg = Config.model_validate(_base())
-    assert cfg.model.max_length == 4096
+    assert cfg.model.max_length == 2048 and cfg.model.batch_size == 1
     assert cfg.model.repo == "Cloudflare/clef"
 
 

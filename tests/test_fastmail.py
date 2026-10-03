@@ -22,13 +22,13 @@ EMAILS = {
         "id": "e1", "messageId": ["<a@x>"], "mailboxIds": {"mb-inbox": True},
         "from": [{"name": "Shop", "email": "shop@x.com"}], "to": [{"name": None, "email": "me@x.com"}],
         "subject": "Receipt", "receivedAt": "2026-10-01T10:00:00Z",
-        "header:List-Id:asText": None, "header:List-Unsubscribe:asText": "<mailto:u@x.com>",
+        "header:List-Id:asText": None, "header:List-Unsubscribe:asURLs": ["mailto:u@x.com"],
         "textBody": [{"partId": "1", "type": "text/plain"}], "bodyValues": {"1": {"value": "Total $5"}},
     },
     "e2": {
         "id": "e2", "messageId": ["<b@x>"], "mailboxIds": {"mb-inbox": True},
         "from": [{"email": "news@x.com"}], "to": [], "subject": "News", "receivedAt": "2026-09-30T10:00:00Z",
-        "header:List-Id:asText": "<news.x.com>", "header:List-Unsubscribe:asText": None,
+        "header:List-Id:asText": "<news.x.com>", "header:List-Unsubscribe:asURLs": None,
         "textBody": [{"partId": "2", "type": "text/html"}], "bodyValues": {"2": {"value": "<p>Hello <b>you</b></p>"}},
     },
 }
@@ -96,12 +96,13 @@ def test_fetch_inbox(jmap):
     g = fake.calls("Email/get")[0]
     assert g["ids"] == ["e1", "e2"]
     assert g["fetchTextBodyValues"] is True and g["maxBodyValueBytes"] > 0
-    assert "header:List-Id:asText" in g["properties"] and "header:List-Unsubscribe:asText" in g["properties"]
+    assert "header:List-Id:asText" in g["properties"] and "header:List-Unsubscribe:asURLs" in g["properties"]
 
     m1, m2 = msgs
     assert (m1.id, m1.key, m1.sender, m1.to, m1.subject) == ("e1", "e1", "Shop <shop@x.com>", "me@x.com", "Receipt")
     assert m1.text_body == "Total $5" and m1.is_mailing_list
-    assert m2.text_body == "Hello you" and m2.list_id == "<news.x.com>"
+    assert m1.list_unsubscribe == "mailto:u@x.com"
+    assert m2.text_body == "Hello you" and m2.list_id == "<news.x.com>" and m2.list_unsubscribe is None
 
 
 def test_fetch_skips_processed_and_limits(jmap):

@@ -11,7 +11,7 @@ question whose options are your categories.
 ## Requirements
 
 - NVIDIA GPU with 24 GB (tested target: RTX 3090). The model is ~54 GB in BF16, so it is loaded in
-  4-bit NF4 (~16 GB) with bitsandbytes; input is capped at 4096 tokens.
+  4-bit NF4 (~17 GB) with bitsandbytes; input is capped at 2048 tokens per email.
 - ~54 GB of disk for the model snapshot.
 - Python 3.12 + [uv](https://docs.astral.sh/uv/). On NixOS use the flake's dev shell so the
   pip-installed torch can find `libcuda`:
@@ -41,6 +41,16 @@ This loads the model, prints parameter counts per dtype (`uint8` = 4-bit; the vi
 `lm_head` and the joint head should be `bfloat16`), runs the two model-card examples, and reports
 VRAM. It exits non-zero unless the support-ticket example routes to `technical` / `Today`.
 If the modules kept in BF16 are wrong, adjust `model.skip_quant_modules`.
+
+### 2b. Save a pre-quantized copy (recommended)
+
+Every load otherwise reads the full 54 GB checkpoint and quantizes it again. Do it once:
+
+```sh
+uv run email-organizer quantize        # writes ~17 GB to ~/.local/share/email-organizer/clef-nf4
+```
+
+then set `model.path: ~/.local/share/email-organizer/clef-nf4` in the config.
 
 ### 3. Config
 
@@ -118,4 +128,5 @@ client, so no GPU or network is needed.
 - Start with `--dry-run`, check the uncertain list, and reword `criteria` or adjust `threshold`.
 - If NF4 hurts accuracy noticeably, compare the logged probabilities against criteria changes
   before reaching for bigger quantization (`bf16` needs ~54 GB of VRAM).
-- `batch_size` defaults to 2. A CUDA OOM retries that batch one message at a time.
+- `batch_size` defaults to 1 and `max_length` to 2048: with ~17 GB of weights there is little
+  room for activations. A CUDA OOM on a larger batch retries it one message at a time.

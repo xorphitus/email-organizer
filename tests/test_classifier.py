@@ -1,6 +1,8 @@
+import json
+
 import pytest
 
-from email_organizer.classifier import build_record, decide, split_logits
+from email_organizer.classifier import build_record, decide, is_prequantized, split_logits
 from email_organizer.message import Message
 
 from conftest import CATEGORIES
@@ -40,3 +42,11 @@ def test_split_logits_layouts():
     assert split_logits([["a1"], ["b1"]], [1, 1]) == [["a1"], ["b1"]]
     with pytest.raises(ValueError):
         split_logits([["x", "y", "z"]], [1, 1])
+
+
+def test_is_prequantized(tmp_path):
+    assert not is_prequantized(tmp_path)
+    (tmp_path / "config.json").write_text(json.dumps({"model_type": "qwen3_5"}))
+    assert not is_prequantized(tmp_path)
+    (tmp_path / "config.json").write_text(json.dumps({"quantization_config": {"load_in_4bit": True}}))
+    assert is_prequantized(tmp_path)

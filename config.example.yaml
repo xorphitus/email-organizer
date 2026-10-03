@@ -2,11 +2,11 @@
 
 model:
   repo: Cloudflare/clef
-  # path: /data/models/clef     # use a pre-downloaded snapshot instead of the HF cache
+  # path: ~/.local/share/email-organizer/clef-nf4   # output of `email-organizer quantize` (fast load)
   quantization: nf4             # nf4 (fits a 24 GB GPU) | bf16 (needs ~54 GB VRAM)
-  max_length: 4096
+  max_length: 2048
   threshold: 0.6                # below this top probability the message stays in the inbox
-  batch_size: 2
+  batch_size: 1
 
 # Each category is one option of a single "choice" question. `criteria` is what Clef reads,
 # so write it as a description of the mail that belongs there. folder: INBOX = leave in place.

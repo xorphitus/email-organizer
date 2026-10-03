@@ -153,6 +153,31 @@ def runs(limit: int = 10, config: ConfigOpt = DEFAULT_CONFIG_PATH) -> None:
     console.print(t)
 
 
+DEFAULT_QUANTIZED_DIR = Path("~/.local/share/email-organizer/clef-nf4").expanduser()
+
+
+@app.command()
+def quantize(
+    out: Annotated[Path, typer.Option(help="Where to write the 4-bit copy (~17 GB)")] = DEFAULT_QUANTIZED_DIR,
+    config: ConfigOpt = DEFAULT_CONFIG_PATH,
+) -> None:
+    """Quantize Clef to NF4 once and save it, so later runs load without re-quantizing."""
+    from .classifier import ClefClassifier, is_prequantized
+    from .config import ModelConfig
+
+    cfg = load_config(config).model if config.exists() else ModelConfig()
+    if cfg.path and is_prequantized(cfg.path):
+        console.print(f"[yellow]model.path already points at a quantized copy: {cfg.path}[/]")
+        raise typer.Exit(0)
+    cfg = cfg.model_copy(update={"quantization": "nf4"})
+    clf = ClefClassifier(cfg, {})
+    console.print("loading Clef…")
+    clf.load()
+    console.print(f"saving to {out} …")
+    clf.save_quantized(out)
+    console.print(f"[green]done.[/] Set this in your config to use it:\n\nmodel:\n  path: {out}")
+
+
 @app.command("test-model")
 def test_model(config: ConfigOpt = DEFAULT_CONFIG_PATH) -> None:
     """Load Clef, run the model-card examples, and report probabilities and VRAM."""

@@ -6,10 +6,13 @@ without a GPU stack.
 
 from __future__ import annotations
 
+import json
 import logging
+import shutil
 import sys
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Protocol
 
 from .config import Category, ModelConfig
@@ -111,7 +114,8 @@ class ClefClassifier:
 
         self._fns = {"encode": encode_record, "collate": collate_records}
         kwargs: dict[str, Any] = {}
-        if self.cfg.quantization == "nf4":
+        prequantized = is_prequantized(path)
+        if self.cfg.quantization == "nf4" and not prequantized:
             from transformers import BitsAndBytesConfig
 
             kwargs["quantization_config"] = BitsAndBytesConfig(
@@ -121,9 +125,21 @@ class ClefClassifier:
                 bnb_4bit_use_double_quant=True,
                 llm_int8_skip_modules=list(self.cfg.skip_quant_modules),
             )
-        log.info("loading Clef from %s (%s)", path, self.cfg.quantization)
+        log.info("loading Clef from %s (%s)", path, "prequantized" if prequantized else self.cfg.quantization)
         self.model, self.processor = load_release_model(path, device="cuda", dtype=torch.bfloat16, **kwargs)
         self.model.eval()
+
+    def save_quantized(self, out_dir: Path) -> None:
+        """Save the loaded 4-bit model plus Clef's head/processor files as a fast-loading copy."""
+        from huggingface_hub import snapshot_download
+
+        self.load()
+        src = Path(self.cfg.path) if self.cfg.path else Path(snapshot_download(self.cfg.repo))
+        out_dir.mkdir(parents=True, exist_ok=True)
+        self.model.language_model.save_pretrained(out_dir)
+        for f in src.iterdir():
+            if f.is_file() and not (out_dir / f.name).exists() and not f.name.startswith("model"):
+                shutil.copy2(f, out_dir / f.name)
 
     # inference ---------------------------------------------------------------
     def predict(self, records: Sequence[dict[str, Any]]) -> list[dict[str, dict[str, float]]]:
@@ -180,6 +196,13 @@ class ClefClassifier:
                     torch.cuda.empty_cache()
                     decisions.append(Decision(None, 0.0, error="cuda-oom"))
         return decisions
+
+
+def is_prequantized(path: str | Path) -> bool:
+    try:
+        return "quantization_config" in json.loads((Path(path) / "config.json").read_text())
+    except (OSError, ValueError):
+        return False
 
 
 # --- smoke test ------------------------------------------------------------

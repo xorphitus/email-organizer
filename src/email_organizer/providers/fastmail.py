@@ -22,7 +22,8 @@ MAX_BODY_BYTES = 64 * 1024
 
 EMAIL_PROPERTIES = [
     "id", "messageId", "mailboxIds", "from", "to", "subject", "receivedAt",
-    "header:List-Id:asText", "header:List-Unsubscribe:asText",
+    # RFC 8621 §4.1.2: RFC 2369 List-* headers only parse asURLs (List-Id allows asText).
+    "header:List-Id:asText", "header:List-Unsubscribe:asURLs",
     "textBody", "bodyValues",
 ]
 
@@ -73,7 +74,8 @@ class FastmailProvider:
         results = []
         for name, args, _ in r.json()["methodResponses"]:
             if name == "error":
-                raise JMAPError(f"{args.get('type')}: {args.get('description', '')}")
+                detail = {k: v for k, v in args.items() if k != "type"}
+                raise JMAPError(f"{args.get('type')}: {detail or 'no details'}")
             results.append(args)
         return results
 
@@ -172,7 +174,7 @@ class FastmailProvider:
             subject=e.get("subject") or "",
             date=e.get("receivedAt") or "",
             list_id=e.get("header:List-Id:asText"),
-            list_unsubscribe=e.get("header:List-Unsubscribe:asText"),
+            list_unsubscribe=", ".join(e.get("header:List-Unsubscribe:asURLs") or []) or None,
             text_body="\n".join(chunks),
         )
 
