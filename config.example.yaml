@@ -13,19 +13,28 @@ model:
 # a plain meaning, and describe what makes the mail belong there. folder: INBOX = leave in place.
 #
 # Split by what you do with the mail (as in HEY's Imbox / Paper Trail / Feed), not by topic.
+# This runs after the fact, so short-lived notices (codes, alerts, activity) have already done
+# their job and are filed away; only mail that still needs you stays in the inbox.
 # Anything uncertain (below `threshold`) also stays in the inbox, so mistakes fail safe.
 categories:
   important:
     criteria: >-
-      Needs my attention: written by a real person to me (replies, conversations, questions,
-      invitations), or asks me to act or decide soon, such as security alerts, sign-in codes,
-      payment problems, appointments and deadlines.
+      Still needs me: written by a real person to me (replies, conversations, questions,
+      invitations), or asks me to make a decision or fix a problem, such as a failed payment,
+      an expiring account or a deadline.
     folder: INBOX
+  notifications:
+    criteria: >-
+      Short-lived automated notices that only matter when they arrive: sign-in and verification
+      codes, login and security alerts, password resets, reminders, and activity or status
+      updates from apps and services (CI, code review, monitoring, account activity).
+      Nothing worth keeping afterwards.
+    folder: Notifications
   paper_trail:
     criteria: >-
-      A record to keep but not read: receipts, invoices, order and shipping confirmations,
-      bookings and tickets, account statements, subscription renewals, and policy or terms
-      updates. Sent automatically because of something I did.
+      A record worth keeping for later reference but not reading: receipts, invoices, order and
+      shipping confirmations, bookings and tickets, account statements, subscription renewals,
+      and policy or terms updates. Sent automatically because of something I did.
     folder: Paper Trail
   feed:
     criteria: >-
