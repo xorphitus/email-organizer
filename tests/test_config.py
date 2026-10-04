@@ -13,8 +13,9 @@ def test_example_config_loads():
     assert cfg.model.quantization == "nf4"
     assert cfg.model.threshold == 0.6
     assert cfg.model.batch_size == 1
-    assert set(cfg.categories) == {"receipts", "newsletters", "notifications", "personal"}
-    assert cfg.categories["personal"].folder == "INBOX"
+    assert set(cfg.categories) == {"important", "paper_trail", "feed"}
+    assert cfg.categories["important"].folder == "INBOX"
+    assert cfg.categories["paper_trail"].folder == "Paper Trail"
     assert isinstance(cfg.account("fastmail"), FastmailAccount)
     proton = cfg.account("proton")
     assert isinstance(proton, ProtonAccount) and proton.port == 1143

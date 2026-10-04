@@ -8,13 +8,30 @@ model:
   threshold: 0.6                # below this top probability the message stays in the inbox
   batch_size: 1
 
-# Each category is one option of a single "choice" question. `criteria` is what Clef reads,
-# so write it as a description of the mail that belongs there. folder: INBOX = leave in place.
+# Each category is one option of a single "choice" question that Clef must answer, so every
+# email lands in exactly one. Clef reads both the category id and its `criteria`: use ids with
+# a plain meaning, and describe what makes the mail belong there. folder: INBOX = leave in place.
+#
+# Split by what you do with the mail (as in HEY's Imbox / Paper Trail / Feed), not by topic.
+# Anything uncertain (below `threshold`) also stays in the inbox, so mistakes fail safe.
 categories:
-  receipts:      {criteria: "Purchase receipts, invoices, order/shipping confirmations", folder: Receipts}
-  newsletters:   {criteria: "Newsletters, marketing, promotions, digests", folder: Newsletters}
-  notifications: {criteria: "Automated service notifications, alerts, security codes", folder: Notifications}
-  personal:      {criteria: "Written personally by a human to me", folder: INBOX}
+  important:
+    criteria: >-
+      Needs my attention: written by a real person to me (replies, conversations, questions,
+      invitations), or asks me to act or decide soon, such as security alerts, sign-in codes,
+      payment problems, appointments and deadlines.
+    folder: INBOX
+  paper_trail:
+    criteria: >-
+      A record to keep but not read: receipts, invoices, order and shipping confirmations,
+      bookings and tickets, account statements, subscription renewals, and policy or terms
+      updates. Sent automatically because of something I did.
+    folder: Paper Trail
+  feed:
+    criteria: >-
+      Bulk reading I subscribed to: newsletters, digests, blog and product updates, marketing
+      and promotions, social media and community notifications. Usually sent to a mailing list.
+    folder: Feed
 
 accounts:
   - {name: fastmail, type: fastmail, token_env: FASTMAIL_API_TOKEN}
