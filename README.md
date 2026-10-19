@@ -72,7 +72,9 @@ Settings → Privacy & Security → Integrations → **API tokens** → new toke
 export FASTMAIL_API_TOKEN=fmu1-…
 ```
 
-Folders are matched by full path (`Parent/Child`) and created when missing.
+Folders are matched by full path (`Parent/Child`) and created when missing. Pinned messages
+(the `$flagged` keyword) are never fetched, so they stay in the inbox; unpin one and the next run
+picks it up.
 
 ### 5. ProtonMail (Bridge)
 

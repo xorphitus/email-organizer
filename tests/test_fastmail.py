@@ -40,6 +40,7 @@ class FakeJMAP:
         self.requests: list[dict] = []
         self.created = 0
         self.set_fail: set[str] = set()
+        self.flagged: set[str] = set()
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
         assert request.headers["Authorization"] == "Bearer tok"
@@ -66,7 +67,10 @@ class FakeJMAP:
             return {"created": created}
         if name == "Email/query":
             pos, lim = args["position"], args["limit"]
-            return {"ids": self.inbox_ids[pos : pos + lim]}
+            ids = self.inbox_ids
+            if args["filter"].get("notKeyword") == "$flagged":
+                ids = [i for i in ids if i not in self.flagged]
+            return {"ids": ids[pos : pos + lim]}
         if name == "Email/get":
             return {"list": [EMAILS[i] for i in args["ids"]]}
         if name == "Email/set":
@@ -91,7 +95,7 @@ def test_fetch_inbox(jmap):
     fake, p = jmap
     msgs = p.fetch_inbox(10, skip=lambda key: False)
     q = fake.calls("Email/query")[0]
-    assert q["filter"] == {"inMailbox": "mb-inbox"}
+    assert q["filter"] == {"inMailbox": "mb-inbox", "notKeyword": "$flagged"}
     assert q["sort"] == [{"property": "receivedAt", "isAscending": False}]
     g = fake.calls("Email/get")[0]
     assert g["ids"] == ["e1", "e2"]
@@ -103,6 +107,13 @@ def test_fetch_inbox(jmap):
     assert m1.text_body == "Total $5" and m1.is_mailing_list
     assert m1.list_unsubscribe == "mailto:u@x.com"
     assert m2.text_body == "Hello you" and m2.list_id == "<news.x.com>" and m2.list_unsubscribe is None
+
+
+def test_fetch_excludes_pinned(jmap):
+    fake, p = jmap
+    fake.flagged = {"e1"}
+    msgs = p.fetch_inbox(10, skip=lambda key: False)
+    assert [m.id for m in msgs] == ["e2"]
 
 
 def test_fetch_skips_processed_and_limits(jmap):

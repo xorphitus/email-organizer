@@ -19,6 +19,8 @@ MAIL_CAP = "urn:ietf:params:jmap:mail"
 QUERY_PAGE = 100
 SET_CHUNK = 50
 MAX_BODY_BYTES = 64 * 1024
+# Fastmail's "Pin" is the $flagged keyword; pinned mail stays in the inbox.
+PINNED = "$flagged"
 
 EMAIL_PROPERTIES = [
     "id", "messageId", "mailboxIds", "from", "to", "subject", "receivedAt",
@@ -135,7 +137,7 @@ class FastmailProvider:
         position = 0
         while len(wanted) < limit:
             (res,) = self.call(("Email/query", {
-                "filter": {"inMailbox": self._inbox_id},
+                "filter": {"inMailbox": self._inbox_id, "notKeyword": PINNED},
                 "sort": [{"property": "receivedAt", "isAscending": False}],
                 "position": position,
                 "limit": QUERY_PAGE,
